@@ -1,0 +1,69 @@
+name: Deploy to AWS EC2
+
+on:
+  workflow_dispatch:
+  # push:
+  #   branches:
+  #     - main  # Trigger the action on pushes to the main branch
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+    # Checkout the repository
+    - name: Checkout repository
+      uses: actions/checkout@v3
+
+    # Set up SSH for connecting to EC2
+    - name: Set up SSH
+      run: |
+        
+        sudo rm -rf 26-dec
+        mkdir -p ~/.ssh
+        echo "${{ secrets.AWS_SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa  # Use private key stored in GitHub Secrets
+        chmod 600 ~/.ssh/id_rsa  # Secure the SSH private key file
+
+    # SSH into the EC2 instance and deploy the project
+    # - name: Update ALLOWED_HOSTS in settings.py
+    #   run: |
+    #     sed -i "s/ALLOWED_HOSTS = \[\]/ALLOWED_HOSTS = \['$EC2_PUBLIC_IP', 'localhost', '127.0.0.1'\]/" /26-dec/todoApp/settings.py
+    
+    - name: Deploy to EC2
+      run: |
+        # Use StrictHostKeyChecking=no to bypass the SSH host key check (NOT recommended for production)
+        ssh -o StrictHostKeyChecking=no ubuntu@${{ secrets.EC2_PUBLIC_IP }} << 'EOF'
+          # Clone the repository or pull if it already exists
+          cd /home/ubuntu
+          git clone https://github.com/aman7433/26-dec.git || (cd 26-dec && git pull)
+
+          # Navigate to the project directory
+          cd 26-dec
+          
+          sed -i "s/ALLOWED_HOSTS = \[\]/ALLOWED_HOSTS = \['$EC2_PUBLIC_IP'\]/" /home/ubuntu/26-dec/todoApp/settings.py
+          # sed -i "s/ALLOWED_HOSTS = \[\]/ALLOWED_HOSTS = \['$EC2_PUBLIC_IP', 'localhost', '127.0.0.1'\]/" /home/ubuntu/26-dec/todoApp/settings.py
+
+          
+
+          # Create a Python virtual environment
+          python3 -m venv venv
+
+          # Activate the virtual environment
+          source venv/bin/activate
+          # Upgrade pip
+          pip install --upgrade pip
+
+          # Install dependencies from requirements.txt
+          pip install -r requirements.txt
+          
+          # Install Gunicorn
+          # pip install gunicorn
+          
+          # Run Django migrations
+          python manage.py migrate
+
+          # Start the Django development server (optional, not recommended for production)
+          # nohup gunicorn --bind 0.0.0.0:8002 todoApp.wsgi:application &
+          nohup python manage.py runserver 0.0.0.0:8000 &
+        EOF
+        EOF
