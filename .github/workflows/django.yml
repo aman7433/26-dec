@@ -1,9 +1,10 @@
 name: Deploy to AWS EC2
 
 on:
-  push:
-    branches:
-      - main  # Trigger the action on pushes to the main branch
+  workflow_dispatch:
+  # push:
+  #   branches:
+  #     - main  # Trigger the action on pushes to the main branch
 
 jobs:
   deploy:
@@ -25,9 +26,9 @@ jobs:
     - name: Deploy to EC2
       run: |
         # Use StrictHostKeyChecking=no to bypass the SSH host key check (NOT recommended for production)
-        ssh -o StrictHostKeyChecking=no ec2-user@${{ secrets.EC2_PUBLIC_IP }} << 'EOF'
+        ssh -o StrictHostKeyChecking=no ubuntu@${{ secrets.EC2_PUBLIC_IP }} << 'EOF'
           # Clone the repository or pull if it already exists
-          cd /home/ec2-user
+          cd /home/ubuntu
           git clone https://github.com/aman7433/26-dec.git || (cd 26-dec && git pull)
 
           # Navigate to the project directory
