@@ -38,7 +38,7 @@ jobs:
           # Navigate to the project directory
           cd 26-dec
           
-          sed -i "s/ALLOWED_HOSTS = \[\]/ALLOWED_HOSTS = \['$EC2_PUBLIC_IP', 'localhost', '127.0.0.1'\]/" /26-dec/todoApp/settings.py
+          sed -i "s/ALLOWED_HOSTS = \[\]/ALLOWED_HOSTS = \['$EC2_PUBLIC_IP'\]/" /26-dec/todoApp/settings.py
 
           
 
