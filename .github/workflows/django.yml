@@ -55,10 +55,13 @@ jobs:
 
           # Install dependencies from requirements.txt
           pip install -r requirements.txt
-
+          
+          # Install Gunicorn
+          pip install gunicorn
+          
           # Run Django migrations
           python manage.py migrate
 
           # Start the Django development server (optional, not recommended for production)
-          nohup python manage.py runserver 0.0.0.0:8000 &
+           nohup gunicorn --bind 0.0.0.0:8000 todoApp.wsgi:application &
         EOF
