@@ -63,5 +63,5 @@ jobs:
           python manage.py migrate
 
           # Start the Django development server (optional, not recommended for production)
-           nohup gunicorn --bind 0.0.0.0:8001 todoApp.wsgi:application &
+           nohup gunicorn --bind 0.0.0.0:8002 todoApp.wsgi:application &
         EOF
