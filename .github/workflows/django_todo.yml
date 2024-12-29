@@ -2,69 +2,65 @@ name: Deploy to AWS EC2
 
 on:
   workflow_dispatch:
+  # Uncomment below lines if you want to trigger the action on pushes to the main branch
   # push:
   #   branches:
-  #     - main  # Trigger on pushes to the main branch
+  #     - main
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
 
     steps:
-    # Checkout the repository
-    - name: Checkout repository
-      uses: actions/checkout@v3
+      # Checkout the repository
+      - name: Checkout repository
+        uses: actions/checkout@v3
 
-    # Set up SSH for connecting to EC2
-    - name: Set up SSH
-      run: |
-        
-        mkdir -p ~/.ssh
-        echo "${{ secrets.AWS_SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa  # Use the private key from GitHub Secrets
-        chmod 600 ~/.ssh/id_rsa
-        # ssh-keyscan -H $EC2_PUBLIC_IP >> ~/.ssh/known_hosts  # Ensure EC2's public IP is in known_hosts
+      # Set up SSH for connecting to EC2
+      - name: Set up SSH
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.AWS_SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa  # Use private key stored in GitHub Secrets
+          chmod 600 ~/.ssh/id_rsa  # Secure the SSH private key file
 
-    # SSH into EC2 and deploy
-    - name: Deploy to EC2
-      run: |
-        ssh -o StrictHostKeyChecking=no ec2-user@$EC2_PUBLIC_IP << 'EOF'
-          # Stop any running Django server process
-          echo "Stopping any running Django server..."
-          pids=$(ps aux | grep 'python manage.py runserver' | grep -v grep | awk '{print $2}')
-          if [ ! -z "$pids" ]; then
-            kill -9 $pids
-            echo "Django server stopped."
-          else
-            echo "No running Django server found."
-          fi
+      # SSH into the EC2 instance and deploy the project
+      - name: Deploy to EC2
+        run: |
+          ssh -o StrictHostKeyChecking=no ubuntu@${{ secrets.EC2_PUBLIC_IP }} << 'EOF'
+            # Navigate to the home directory
+            cd /home/ubuntu
 
-          # Clone the repository (or pull the latest changes if already cloned)
-          cd /home/ec2-user
-          git clone https://github.com/aman7433/26-dec.git || (cd 26-dec && git pull)
+            # Clone the repository or pull if it already exists
+            if [ ! -d "26-dec" ]; then
+              git clone https://github.com/aman7433/26-dec.git
+            else
+              cd 26-dec && git pull && cd ..
+            fi
 
-          # Navigate to the project directory
-          cd 26-dec
+            # Navigate to the project directory
+            cd 26-dec
 
-          # Update ALLOWED_HOSTS in settings.py to allow the EC2 IP address
-          
+            # Update ALLOWED_HOSTS in Django settings
+            sed -i "s/ALLOWED_HOSTS = \[\]/ALLOWED_HOSTS = \['${{ secrets.EC2_PUBLIC_IP }}', 'localhost', '127.0.0.1'\]/" todoApp/settings.py
 
-          # Create a Python virtual environment
-          python3 -m venv venv
+            # Create a Python virtual environment if it doesn't exist
+            if [ ! -d "venv" ]; then
+              python3 -m venv venv
+            fi
 
-          # Activate the virtual environment
-          source venv/bin/activate
+            # Activate the virtual environment
+            source venv/bin/activate
 
-          sed -i "s/ALLOWED_HOSTS = \[\]/ALLOWED_HOSTS = \['$EC2_PUBLIC_IP', 'localhost', '127.0.0.1'\]/" /home/ec2-user/26-dec/your_project/settings.py
+            # Upgrade pip
+            pip install --upgrade pip
 
-          # Upgrade pip
-          pip install --upgrade pip
+            # Install dependencies from requirements.txt
+            pip install -r requirements.txt
 
-          # Install dependencies
-          pip install -r requirements.txt
+            # Apply Django migrations
+            python manage.py migrate
 
-          # Run Django migrations
-          python manage.py migrate
+            # Start the Django development server in the background
+            nohup python manage.py runserver 0.0.0.0:8000 &
+          EOF
 
-          # Start the Django development server (optional)
-          nohup python manage.py runserver 0.0.0.0:8000 &
-        EOF
