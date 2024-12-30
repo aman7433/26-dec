@@ -57,10 +57,12 @@ jobs:
             # Install dependencies from requirements.txt
             pip install -r requirements.txt
 
+            pip install gunicorn
+
             # Apply Django migrations
             python manage.py migrate
 
             # Start the Django development server in the background
-            nohup python manage.py runserver 0.0.0.0:8000 &
+            nohup gunicorn --bind 0.0.0.0:8001 todoApp.wsgi:application &
           EOF
 
