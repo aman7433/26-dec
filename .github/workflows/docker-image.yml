@@ -1,0 +1,59 @@
+name: Docker Image CI
+
+on:
+  workflow_dispatch:
+  # Uncomment below lines if you want to trigger the action on pushes to the main branch
+  # push:
+  #   branches:
+  #     - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      # Checkout the repository
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      # Set up SSH for connecting to EC2
+      - name: Set up SSH
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.AWS_SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa  # Use private key stored in GitHub Secrets
+          chmod 600 ~/.ssh/id_rsa  # Secure the SSH private key file
+
+      # SSH into the EC2 instance, clone the repo, and deploy with Docker
+      - name: Deploy to EC2 with Docker
+        run: |
+          ssh -o StrictHostKeyChecking=no ubuntu@${{ secrets.EC2_PUBLIC_IP }} << 'EOF'
+            # Update system and install dependencies (git, Docker)
+            sudo apt update -y
+            sudo apt install -y git docker.io
+
+            # Start Docker service
+            sudo systemctl start docker
+            sudo systemctl enable docker
+
+            # Navigate to the home directory
+            cd /home/ubuntu
+
+            # Delete the existing folder if it exists and recreate it
+            if [ -d "26-dec" ]; then
+              rm -rf 26-dec
+            fi
+
+            # Clone the repository
+            git clone https://github.com/aman7433/26-dec.git
+
+            # Navigate to the project directory
+            cd 26-dec
+            
+            sed -i "s/ALLOWED_HOSTS = \[\]/ALLOWED_HOSTS = \['${{ secrets.EC2_PUBLIC_IP }}', 'localhost', '127.0.0.1'\]/" todoApp/settings.py
+
+            # Build the Docker image from the existing Dockerfile
+            sudo docker build -t 26-dec-image .
+
+            # Run the Docker container in detached mode (on port 8001)
+            sudo docker run -d -p 8001:8000 --name 26-dec-container 26-dec-image
+          EOF
