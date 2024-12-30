@@ -48,6 +48,8 @@ jobs:
 
             # Navigate to the project directory
             cd 26-dec
+            
+            sed -i "s/ALLOWED_HOSTS = \[\]/ALLOWED_HOSTS = \['${{ secrets.EC2_PUBLIC_IP }}', 'localhost', '127.0.0.1'\]/" todoApp/settings.py
 
             # Build the Docker image from the existing Dockerfile
             sudo docker build -t 26-dec-image .
