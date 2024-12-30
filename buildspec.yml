@@ -1,0 +1,28 @@
+version: 0.2
+
+phases:
+  install:
+    
+    commands:
+      - echo Installing Nginx...
+      - sudo apt-get update -y
+      - sudo amazon-linux-extras install nginx1.12 -y
+      - sudo service nginx start
+
+  pre_build:
+    commands:
+      - echo Nginx installed and started, preparing index.html...
+
+  build:
+    commands:
+      - echo Creating index.html...
+      - echo "<html><body><h1>Welcome to Nginx on AWS CodeBuild!</h1></body></html>" | sudo tee /var/www/html/index.html > /dev/null
+
+  post_build:
+    commands:
+      - echo Build completed, preparing to collect artifacts...
+
+artifacts:
+  files:
+    - /var/www/html/index.html
+  discard-paths: yes
