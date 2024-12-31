@@ -1,42 +1,24 @@
 version: 0.2
 
-env:
-  variables:
-    PACKAGE_NAME: "nginx-setup"
-    VERSION: "1.0"
-    NGINX_CONF_DIR: "/etc/nginx"
-    NGINX_LOG_DIR: "/var/log/nginx"
-
 phases:
   install:
     commands:
       - echo "Installing dependencies..."
-      - yum update -y
-      - yum install -y nginx  # Install Nginx on the CodeBuild environment
-      # - sudo systemctl start nginx  # Start Nginx (not required for build, just for testing purposes)
-      # - systemctl enable nginx # Enable Nginx to start on boot
-
-  pre_build:
-    commands:
-      - echo "Running pre-build tasks..."
-      - curl -I localhost:80 # Test if Nginx is installed and running by making a request
+      - pip install -r requirements.txt
 
   build:
     commands:
-      - echo "Building Nginx configuration..."
-      - cp /etc/nginx/nginx.conf /tmp/nginx.conf  # Copy Nginx config to artifact directory
-      - echo "Build completed, preparing to package artifacts."
+      - echo "Running build..."
+      - pytest  # Example of running tests
 
   post_build:
     commands:
-      - echo "Post-build phase Saving artifacts..."
-      - systemctl stop nginx # Stop nginx after the build
+      - echo "Build completed."
 
 artifacts:
   files:
-    - /tmp/nginx.conf  # Save the Nginx configuration file as an artifact
-    - /var/log/nginx/*  # Save any logs if needed (be careful about log file sizes)
+    - '**/*'  # Include all files in the project directory as build artifacts
 
 cache:
   paths:
-    - '/root/.cache/pip/**/*'
+    - '/root/.cache/pip/**/*'  # Cache pip dependencies to speed up subsequent builds
