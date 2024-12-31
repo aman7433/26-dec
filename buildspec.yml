@@ -3,22 +3,10 @@ version: 0.2
 phases:
   install:
     commands:
-      - echo "Installing dependencies..."
-      - pip install -r requirements.txt
-
+      - npm install
   build:
     commands:
-      - echo "Running build..."
-      - pytest  # Example of running tests
-
-  post_build:
-    commands:
-      - echo "Build completed."
-
+      - npm test
 artifacts:
   files:
-    - '**/*'  # Include all files in the project directory as build artifacts
-
-cache:
-  paths:
-    - '/root/.cache/pip/**/*'  # Cache pip dependencies to speed up subsequent builds
+    - '**/*'
