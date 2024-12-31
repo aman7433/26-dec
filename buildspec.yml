@@ -1,61 +1,42 @@
-# version: 0.2
-
-# phases:
-#   install:
-    
-#     commands:
-#       - echo Installing Nginx...
-#       - sudo yum update -y
-#       - sudo yum install nginx -y
-      
-
-#   pre_build:
-#     commands:
-#       - echo Nginx installed and started, preparing index.html...
-
-#   build:
-#     commands:
-#       - echo Creating index.html...
-#       - echo "<html><body><h1>Welcome to Nginx on AWS CodeBuild!</h1></body></html>" | sudo tee /var/www/html/index.html > /dev/null
-
-#   post_build:
-#     commands:
-#       - echo Build completed, preparing to collect artifacts...
-
-# artifacts:
-#   files:
-#     - /var/www/html/index.html
-#   discard-paths: yes
 version: 0.2
+
+env:
+  variables:
+    PACKAGE_NAME: "nginx-setup"
+    VERSION: "1.0"
+    NGINX_CONF_DIR: "/etc/nginx"
+    NGINX_LOG_DIR: "/var/log/nginx"
 
 phases:
   install:
     commands:
-      - echo Installing Nginx...
-      - sudo yum update -y                  # Update package manager
-      - sudo yum install -y nginx           # Install Nginx using YUM
-      - sudo service nginx start            # Start the Nginx service
+      - echo "Installing dependencies..."
+      - yum update -y
+      - yum install -y nginx  # Install Nginx on the CodeBuild environment
+      - systemctl start nginx  # Start Nginx (not required for build, just for testing purposes)
+      - systemctl enable nginx # Enable Nginx to start on boot
 
   pre_build:
     commands:
-      - echo Ensuring /var/www/html directory exists...
-      - sudo mkdir -p /var/www/html        # Ensure the directory exists
-      - sudo chmod 755 /var/www/html       # Ensure the directory has proper permissions
-      - sudo chown -R nginx:nginx /var/www/html  # Ensure the Nginx user owns the directory
+      - echo "Running pre-build tasks..."
+      - curl -I localhost:80 # Test if Nginx is installed and running by making a request
 
   build:
     commands:
-      - echo Creating index.html...
-      # Ensure the index.html file is created and writable
-      - echo "<html><body><h1>Welcome to Nginx on AWS CodeBuild!</h1></body></html>" | sudo sh -c 'cat > /var/www/html/index.html'
-      # Set proper ownership of the file so Nginx can access it
-      - sudo chown nginx:nginx /var/www/html/index.html
+      - echo "Building Nginx configuration..."
+      - cp /etc/nginx/nginx.conf /tmp/nginx.conf  # Copy Nginx config to artifact directory
+      - echo "Build completed, preparing to package artifacts."
 
   post_build:
     commands:
-      - echo Build completed, preparing to collect artifacts...
+      - echo "Post-build phase: Saving artifacts..."
+      - systemctl stop nginx # Stop nginx after the build
 
 artifacts:
   files:
-    - /var/www/html/index.html             # Specify the index.html file as an artifact
-  discard-paths: yes                       # Remove directory structure in the artifact
+    - /tmp/nginx.conf  # Save the Nginx configuration file as an artifact
+    - /var/log/nginx/*  # Save any logs if needed (be careful about log file sizes)
+
+cache:
+  paths:
+    - '/root/.cache/pip/**/*'
