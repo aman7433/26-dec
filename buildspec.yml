@@ -29,7 +29,7 @@ phases:
 
   post_build:
     commands:
-      - echo "Post-build phase: Saving artifacts..."
+      - echo "Post-build phase Saving artifacts..."
       - systemctl stop nginx # Stop nginx after the build
 
 artifacts:
