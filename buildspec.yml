@@ -13,8 +13,8 @@ phases:
       - echo "Installing dependencies..."
       - yum update -y
       - yum install -y nginx  # Install Nginx on the CodeBuild environment
-      - systemctl start nginx  # Start Nginx (not required for build, just for testing purposes)
-      - systemctl enable nginx # Enable Nginx to start on boot
+      # - sudo systemctl start nginx  # Start Nginx (not required for build, just for testing purposes)
+      # - systemctl enable nginx # Enable Nginx to start on boot
 
   pre_build:
     commands:
